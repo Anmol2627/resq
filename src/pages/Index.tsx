@@ -4,7 +4,6 @@ import { StatusBar } from "@/components/nexus/StatusBar";
 import { BottomNav, type NavScreen } from "@/components/nexus/BottomNav";
 import { DesktopSidebar } from "@/components/nexus/DesktopSidebar";
 import { DesktopTopBar } from "@/components/nexus/DesktopTopBar";
-import { DesktopMapStage } from "@/components/nexus/DesktopMapStage";
 import { ResponderPanel } from "@/components/nexus/ResponderPanel";
 import { Dashboard } from "@/screens/Dashboard";
 import { EmergencyTrigger } from "@/screens/EmergencyTrigger";
@@ -73,10 +72,6 @@ const Index = () => {
     screen === "trigger" || screen === "tracking" ? "sos" : (screen as NavScreen);
   const meta = titles[screen] || titles.dashboard;
 
-  // Only show the extra desktop map stage on the map screen.
-  const showDesktopMapStage = screen === "map";
-  const hideDesktopMapStage = !showDesktopMapStage;
-
   return (
     <div className="relative min-h-screen bg-void">
       {/* ============== MOBILE / TABLET (< lg) ============== */}
@@ -110,14 +105,8 @@ const Index = () => {
           <div className="flex-1 flex min-h-0">
             {/* Center: stage + screen content */}
             <div className="flex-1 flex min-w-0">
-              {showDesktopMapStage && <DesktopMapStage screen={screen} />}
-
               {/* Screen detail column */}
-              <div className={
-                hideDesktopMapStage
-                  ? "flex-1 overflow-y-auto"
-                  : "w-[440px] shrink-0 border-l border-subtle bg-surface/60 overflow-y-auto h-[calc(100vh-72px)] sticky top-[72px]"
-              }>
+              <div className="flex-1 overflow-y-auto">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={screen}
@@ -125,7 +114,7 @@ const Index = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                    className={hideDesktopMapStage ? "" : "max-w-[430px] mx-auto"}
+                    className="w-full"
                   >
                     {renderScreen()}
                   </motion.div>
