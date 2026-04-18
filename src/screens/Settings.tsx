@@ -78,7 +78,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="px-6 py-6 space-y-6">
+    <div className="px-4 sm:px-6 py-5 sm:py-6 space-y-5 sm:space-y-6 pb-28">
       <div className="rounded-xl border border-subtle bg-card-elev p-4">
         <div className="font-display text-[18px] font-bold text-primary-fg">Profile Settings</div>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -104,11 +104,11 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button onClick={save} className="h-10 px-4 rounded-lg bg-emergency text-primary-fg font-display text-sm tracking-widest-2">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button onClick={save} className="h-10 px-4 rounded-lg bg-emergency text-primary-fg font-display text-sm tracking-widest-2 w-full sm:w-auto">
           Save Changes
         </button>
-        <button onClick={signOut} className="h-10 px-4 rounded-lg border border-subtle text-secondary-fg font-display text-sm tracking-widest-2">
+        <button onClick={signOut} className="h-10 px-4 rounded-lg border border-subtle text-secondary-fg font-display text-sm tracking-widest-2 w-full sm:w-auto">
           Logout
         </button>
       </div>

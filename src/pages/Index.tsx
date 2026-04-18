@@ -90,7 +90,12 @@ const Index = () => {
     <div className="relative min-h-screen bg-void">
       {/* ============== MOBILE / TABLET (< lg) ============== */}
       <div className="lg:hidden relative z-10 mx-auto max-w-[430px] min-h-screen">
-        {screen !== "alert" && screen !== "trigger" && <StatusBar />}
+        {screen !== "alert" && screen !== "trigger" && (
+          <StatusBar
+            onOpenSettings={() => setScreen("settings")}
+            onOpenSkills={() => setScreen("skills")}
+          />
+        )}
         <AnimatePresence mode="wait">
           <motion.main
             key={screen}

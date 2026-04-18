@@ -1,6 +1,14 @@
-import { Bell, Signal } from "lucide-react";
+import { Bell, Signal, Settings, BookOpen } from "lucide-react";
 
-export const StatusBar = ({ unread = 3 }: { unread?: number }) => {
+export const StatusBar = ({
+  unread = 3,
+  onOpenSettings,
+  onOpenSkills,
+}: {
+  unread?: number;
+  onOpenSettings?: () => void;
+  onOpenSkills?: () => void;
+}) => {
   return (
     <header className="relative z-20 flex items-center justify-between px-6 pt-6 pb-4">
       <div className="flex items-center gap-3">
@@ -16,6 +24,22 @@ export const StatusBar = ({ unread = 3 }: { unread?: number }) => {
         </span>
       </div>
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenSkills}
+          className="h-9 w-9 grid place-items-center rounded-full bg-elevated border border-subtle hover:border-info/50 transition-colors"
+          aria-label="Open skills library"
+        >
+          <BookOpen className="h-4 w-4 text-secondary-fg" strokeWidth={2} />
+        </button>
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="h-9 w-9 grid place-items-center rounded-full bg-elevated border border-subtle hover:border-info/50 transition-colors"
+          aria-label="Open settings"
+        >
+          <Settings className="h-4 w-4 text-secondary-fg" strokeWidth={2} />
+        </button>
         <Signal className="h-4 w-4 text-secondary-fg" strokeWidth={2.5} />
         <button className="relative h-9 w-9 grid place-items-center rounded-full bg-elevated border border-subtle hover:border-emergency/50 transition-colors">
           <Bell className="h-4 w-4 text-secondary-fg" strokeWidth={2} />

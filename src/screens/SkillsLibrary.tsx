@@ -194,7 +194,7 @@ const s = {
   page: {
     background: "#0d0f14",
     minHeight: "100vh",
-    padding: "24px",
+    padding: "16px",
     fontFamily: "'Rajdhani', sans-serif",
     color: "#e2e8f0",
   },
@@ -220,7 +220,7 @@ const s = {
   },
   statsRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
     gap: "10px",
     marginBottom: "18px",
   },

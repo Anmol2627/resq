@@ -46,7 +46,7 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
     if (!incidentLive?.id) return;
     const start = Date.now();
     holdRef.current = window.setInterval(() => {
-      const p = (Date.now() - start) / 1500;
+      const p = (Date.now() - start) / 1000;
       if (p >= 1) {
         cancelHold();
         resolveIncidentMut.mutate(incidentLive.id, {
