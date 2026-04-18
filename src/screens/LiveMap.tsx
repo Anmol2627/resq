@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Minus, Crosshair, Layers, ChevronRight, Phone, MessageSquare } from "lucide-react";
-import { MapCanvas } from "@/components/nexus/MapCanvas";
+import { LeafletMap } from "@/components/nexus/LeafletMap";
 import { liveResponders, pendingResponders, skillColors } from "@/lib/nexus-data";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,7 +17,7 @@ export const LiveMap = () => {
     <div className="pb-28">
       {/* Map */}
       <div className="relative">
-        <MapCanvas height={420} />
+        <LeafletMap height={420} />
 
         {/* Status banner */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-nav border border-emergency/40"

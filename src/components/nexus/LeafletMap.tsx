@@ -1,0 +1,116 @@
+import { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+const defaultCenter: [number, number] = [43.6532, -79.3832];
+const darkLayer = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const darkAttribution =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+export const LeafletMap = ({ height = 420 }: { height?: number }) => {
+  const mapNode = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.CircleMarker | null>(null);
+  const accuracyRef = useRef<L.Circle | null>(null);
+  const [status, setStatus] = useState("Locating current position...");
+
+  const setPosition = (coords: [number, number], accuracy?: number) => {
+    if (!mapRef.current) return;
+    mapRef.current.setView(coords, 14, { animate: true });
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng(coords);
+    } else {
+      markerRef.current = L.circleMarker(coords, {
+        radius: 8,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#66d9ff",
+        fillOpacity: 1,
+        pane: "markerPane",
+      }).addTo(mapRef.current);
+    }
+
+    if (accuracy !== undefined) {
+      if (accuracyRef.current) {
+        accuracyRef.current.setLatLng(coords).setRadius(accuracy);
+      } else {
+        accuracyRef.current = L.circle(coords, {
+          radius: accuracy,
+          color: "#66d9ff",
+          opacity: 0.35,
+          weight: 1,
+          fillColor: "#66d9ff",
+          fillOpacity: 0.08,
+        }).addTo(mapRef.current);
+      }
+    }
+  };
+
+  const locateCurrentPosition = () => {
+    if (!navigator.geolocation) {
+      setStatus("Geolocation not supported");
+      return;
+    }
+
+    setStatus("Finding current location...");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords: [number, number] = [position.coords.latitude, position.coords.longitude];
+        setStatus("Current location set");
+        setPosition(coords, position.coords.accuracy);
+      },
+      (error) => {
+        setStatus(error.message || "Unable to access location");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    if (!mapNode.current || mapRef.current) return;
+
+    mapRef.current = L.map(mapNode.current, {
+      center: defaultCenter,
+      zoom: 13,
+      zoomControl: false,
+      attributionControl: false,
+      minZoom: 3,
+    });
+
+    L.tileLayer(darkLayer, {
+      attribution: darkAttribution,
+      maxZoom: 19,
+      subdomains: ["a", "b", "c", "d"],
+      tileSize: 512,
+      zoomOffset: -1,
+    }).addTo(mapRef.current);
+
+    L.control.zoom({ position: "topright" }).addTo(mapRef.current);
+    L.control.attribution({ prefix: false, position: "bottomright" }).addTo(mapRef.current);
+
+    locateCurrentPosition();
+
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  return (
+    <div className="relative rounded-[32px] overflow-hidden border border-subtle bg-black" style={{ height }}>
+      <div ref={mapNode} className="h-full w-full" />
+      <div className="absolute left-4 top-4 rounded-3xl bg-void/90 border border-subtle p-3 shadow-lg backdrop-blur-sm">
+        <div className="font-mono text-[10px] tracking-widest-2 text-muted-fg uppercase">Live location</div>
+        <div className="mt-1 text-[12px] leading-5 text-primary-fg">{status}</div>
+      </div>
+      <button
+        type="button"
+        onClick={locateCurrentPosition}
+        className="absolute right-4 top-4 rounded-full border border-subtle bg-surface/95 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-primary-fg shadow-sm transition hover:bg-surface"
+      >
+        My location
+      </button>
+    </div>
+  );
+};
