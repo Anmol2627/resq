@@ -73,9 +73,8 @@ const Index = () => {
     screen === "trigger" || screen === "tracking" ? "sos" : (screen as NavScreen);
   const meta = titles[screen] || titles.dashboard;
 
-  // Screens whose self-contained map/layout would duplicate the desktop map stage
-  // Hide the desktop map stage on the dashboard so the first screen stays SOS-focused.
-  const hideDesktopMapStage = screen === "dashboard" || screen === "map" || screen === "tracking";
+  // Only show the desktop map stage on the dedicated map screen.
+  const showDesktopMapStage = screen === "map";
 
   return (
     <div className="relative min-h-screen bg-void">
@@ -110,7 +109,7 @@ const Index = () => {
           <div className="flex-1 flex min-h-0">
             {/* Center: stage + screen content */}
             <div className="flex-1 flex min-w-0">
-              {!hideDesktopMapStage && <DesktopMapStage screen={screen} />}
+              {showDesktopMapStage && <DesktopMapStage screen={screen} />}
 
               {/* Screen detail column */}
               <div className={

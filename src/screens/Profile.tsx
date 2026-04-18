@@ -107,13 +107,21 @@ export const Profile = () => {
         </div>
       </section>
 
-      {/* Skills */}
+      {/* Skills Library */}
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">Verified skills</span>
-          <button className="font-mono text-[10px] tracking-widest-2 text-info uppercase flex items-center gap-1">
-            <Plus className="h-3 w-3" /> Add skill
-          </button>
+        <div className="flex flex-col gap-3 mb-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">Skills library</p>
+              <h2 className="text-lg font-semibold tracking-tight text-primary-fg">Curated certifications & capabilities</h2>
+            </div>
+            <button className="font-mono text-[10px] tracking-widest-2 text-info uppercase flex items-center gap-1">
+              <Plus className="h-3 w-3" /> Add skill
+            </button>
+          </div>
+          <p className="max-w-2xl text-sm leading-6 text-secondary-fg">
+            This library shows your verified credentials and pending certifications in one place. Keep it updated so mission control can dispatch you to the right incident.
+          </p>
         </div>
         <div className="space-y-2">
           {userProfile.skills.map((s) => {
