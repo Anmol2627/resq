@@ -74,7 +74,8 @@ const Index = () => {
   const meta = titles[screen] || titles.dashboard;
 
   // Screens whose self-contained map/layout would duplicate the desktop map stage
-  const hideDesktopMapStage = screen === "map" || screen === "tracking";
+  // Hide the desktop map stage on the dashboard so the first screen stays SOS-focused.
+  const hideDesktopMapStage = screen === "dashboard" || screen === "map" || screen === "tracking";
 
   return (
     <div className="relative min-h-screen bg-void">

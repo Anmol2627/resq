@@ -86,17 +86,36 @@ export const Dashboard = ({ onSos }: { onSos: () => void }) => {
           </p>
         </div>
 
-        {/* Flanking chips - simplified */}
-        <div className="mt-12 flex gap-4">
-          <button className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-card-elev border border-subtle hover:border-emergency/40 transition-all">
-            <Shield className="h-4 w-4 text-secondary-fg" />
-            <span className="font-mono text-[11px] tracking-widest-2 text-primary-fg uppercase">My Skills</span>
-          </button>
-          <button className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-card-elev border border-subtle hover:border-safe/50 transition-all">
-            <MapPin className="h-4 w-4 text-safe" />
-            <span className="font-mono text-[11px] tracking-widest-2 text-primary-fg uppercase">Nearby</span>
-            <span className="grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-safe-dim text-safe font-mono text-[10px] font-bold">12</span>
-          </button>
+        <div className="mt-12 grid w-full max-w-[520px] gap-4 text-sm">
+          <div className="rounded-[32px] border border-subtle bg-surface/80 p-5 shadow-lg ring-1 ring-white/5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] tracking-[0.35em] uppercase text-muted-fg">Emergency readiness</p>
+                <h2 className="mt-2 text-base font-semibold text-primary-fg">Only SOS lives here</h2>
+              </div>
+              <span className="inline-flex items-center rounded-full bg-emergency/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-emergency">
+                SOS only
+              </span>
+            </div>
+            <p className="mt-4 leading-6 text-muted-fg">
+              The first screen is reserved for emergency activation. Use the dedicated MAP screen for live tracking and the OPERATIONS screen for incident management.
+            </p>
+          </div>
+
+          <div className="rounded-[32px] border border-subtle bg-surface/80 p-5 shadow-lg ring-1 ring-white/5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] tracking-[0.35em] uppercase text-muted-fg">Quick control</p>
+                <h2 className="mt-2 text-base font-semibold text-primary-fg">Ready for rapid dispatch</h2>
+              </div>
+              <div className="rounded-full bg-safe/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.26em] text-safe">
+                Live network
+              </div>
+            </div>
+            <p className="mt-4 leading-6 text-muted-fg">
+              Hold the red button to alert responders immediately. You can also switch to PROFILE to review skills or ALERTS for sector status after dispatch.
+            </p>
+          </div>
         </div>
       </section>
     </div>
