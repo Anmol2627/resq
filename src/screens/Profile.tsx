@@ -4,10 +4,11 @@ import { skillColors, type SkillType } from "@/lib/nexus-data";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
-import { useMyProfile, useSetAvailability } from "@/hooks/resq";
+import { useMyIncidents, useMyProfile, useSetAvailability } from "@/hooks/resq";
 
 export const Profile = () => {
   const { data: profile, isLoading, error } = useMyProfile();
+  const incidentsQuery = useMyIncidents();
   const setAvail = useSetAvailability();
 
   const primaryType: SkillType = "medical";
@@ -217,9 +218,41 @@ export const Profile = () => {
       <section>
         <div className="font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase mb-3">Recent responses</div>
         <div className="rounded-xl bg-card-elev border border-subtle overflow-hidden">
-          <div className="px-4 py-3 text-[12px] text-muted-fg">
-            {isLoading ? "Loading profile..." : error ? "Failed to load profile." : "Incident history will appear here once SOS is live."}
-          </div>
+          {incidentsQuery.isLoading ? (
+            <div className="px-4 py-3 text-[12px] text-muted-fg">Loading incident history...</div>
+          ) : incidentsQuery.error ? (
+            <div className="px-4 py-3 text-[12px] text-muted-fg">Failed to load incident history.</div>
+          ) : (incidentsQuery.data ?? []).length ? (
+            <div className="divide-y divide-subtle">
+              {(incidentsQuery.data ?? []).slice(0, 8).map((inc) => (
+                <div key={inc.id} className="px-4 py-3 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[12px] text-primary-fg font-medium uppercase">
+                      {inc.type} · {inc.severity}
+                    </div>
+                    <div className="text-[11px] text-muted-fg truncate">
+                      {inc.description || "No description provided"}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className={cn(
+                      "font-mono text-[10px] tracking-wider uppercase",
+                      inc.status === "OPEN" ? "text-emergency" : "text-safe"
+                    )}>
+                      {inc.status}
+                    </div>
+                    <div className="text-[10px] text-muted-fg">
+                      {new Date(inc.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-3 text-[12px] text-muted-fg">
+              {isLoading ? "Loading profile..." : error ? "Failed to load profile." : "No incidents yet. Your future SOS history will be saved here."}
+            </div>
+          )}
         </div>
       </section>
     </motion.div>

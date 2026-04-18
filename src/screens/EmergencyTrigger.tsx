@@ -4,9 +4,9 @@ import { emergencyTypes } from "@/lib/nexus-data";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useCreateIncident, useMyEmergencyContacts } from "@/hooks/resq";
+import { useCreateIncident, useMyEmergencyContacts, type IncidentRow } from "@/hooks/resq";
 
-export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSent: () => void }) => {
+export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSent: (incident?: IncidentRow) => void }) => {
   const DEFAULT_INDIA_FALLBACK_CONTACT = "9675852627";
   const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
     setDispatching(true);
     dispatchedRef.current = true;
     try {
-      await createIncidentMut.mutateAsync({
+      const incident = await createIncidentMut.mutateAsync({
         type: selectedType as "medical" | "fire" | "safety" | "technical",
         severity,
         description: desc,
@@ -94,12 +94,11 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
         lng: coords?.lng,
       });
       toast.success("SOS dispatched", { description: `Opened WhatsApp for ${opened} contact(s). Tap send in each chat.` });
-      onSent();
+      onSent(incident);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to dispatch SOS";
-      // Keep flow usable even if DB insert fails after WhatsApp opens.
-      toast("SOS message sent", { description: `WhatsApp opened, but incident save failed: ${msg}` });
-      onSent();
+      toast.error("Dispatch failed", { description: `Incident sync failed: ${msg}` });
+      dispatchedRef.current = false;
     } finally {
       setDispatching(false);
     }

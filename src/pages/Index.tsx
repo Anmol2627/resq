@@ -15,6 +15,7 @@ import { Operations } from "@/screens/Operations";
 import { toast } from "sonner";
 import SkillsLibrary from "@/screens/SkillsLibrary";
 import Settings from "@/screens/Settings";
+import type { IncidentRow } from "@/hooks/resq";
 
 type Screen = NavScreen | "trigger" | "tracking" | "skills" | "settings";
 
@@ -32,6 +33,7 @@ const titles: Record<Screen, { title: string; subtitle: string }> = {
 
 const Index = () => {
   const [screen, setScreen] = useState<Screen>("dashboard");
+  const [activeIncident, setActiveIncident] = useState<IncidentRow | null>(null);
 
   const handleNav = (id: NavScreen) => {
     if (id === "sos") setScreen("trigger");
@@ -46,8 +48,9 @@ const Index = () => {
         return (
           <EmergencyTrigger
             onBack={() => setScreen("dashboard")}
-            onSent={() => {
-              toast.success("Alert dispatched", { description: "12 responders notified within 2 km" });
+            onSent={(incident) => {
+              if (incident) setActiveIncident(incident);
+              toast.success("Alert dispatched", { description: "Emergency synced. Waiting for responders..." });
               setScreen("tracking");
             }}
           />
@@ -55,6 +58,7 @@ const Index = () => {
       case "tracking":
         return (
           <ActiveTracking
+            incident={activeIncident}
             onResolve={() => {
               toast("Emergency resolved", { description: "All responders have been notified" });
               setScreen("dashboard");
@@ -108,6 +112,7 @@ const Index = () => {
           onChange={handleNav}
           onSos={() => setScreen("trigger")}
           onOpenSettings={() => setScreen("settings")}
+          onOpenSkills={() => setScreen("skills")}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

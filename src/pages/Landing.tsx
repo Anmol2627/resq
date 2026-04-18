@@ -692,10 +692,31 @@ function AuthSection({ sectionRef }: { sectionRef: React.RefObject<HTMLElement |
   }, [loginEmail, loginPassword, navigate]);
 
   const onGuestAccess = useCallback(() => {
-    toast("Guest mode enabled", {
-      description: "You can trigger SOS instantly. Profile/account features remain limited.",
-    });
-    navigate("/app?guest=1");
+    if (!isSupabaseConfigured || !supabase) {
+      toast("Guest mode enabled", {
+        description: "SOS works, but incident sync may fail until Supabase is configured.",
+      });
+      navigate("/app?guest=1");
+      return;
+    }
+
+    supabase.auth
+      .signInAnonymously()
+      .then(({ error }) => {
+        if (error) {
+          toast("Guest mode limited", {
+            description: "Anonymous auth failed, so SOS may not sync across devices.",
+          });
+        } else {
+          toast("Guest mode enabled", {
+            description: "You can trigger SOS instantly and incidents will sync live.",
+          });
+        }
+        navigate("/app?guest=1");
+      })
+      .catch(() => {
+        navigate("/app?guest=1");
+      });
   }, [navigate]);
 
   const onCreateAccount = useCallback(async () => {
@@ -727,12 +748,23 @@ function AuthSection({ sectionRef }: { sectionRef: React.RefObject<HTMLElement |
       const { data, error } = await supabase.auth.signUp({
         email: signup.email.trim(),
         password: signup.password,
-        options: { data: profile },
+        options: {
+          data: {
+            ...profile,
+            emergency_contacts: signup.emergencyContacts.map((c, idx) => ({
+              position: idx + 1,
+              name: c.name.trim(),
+              relationship: c.relationship.trim(),
+              phone: c.phone.trim(),
+            })),
+          },
+        },
       });
       if (error) throw error;
 
       const userId = data.user?.id;
-      if (userId) {
+      const hasSession = !!data.session;
+      if (userId && hasSession) {
         const { error: profileErr } = await supabase
           .from("profiles")
           .upsert({ id: userId, email: signup.email.trim(), ...profile });
@@ -753,7 +785,7 @@ function AuthSection({ sectionRef }: { sectionRef: React.RefObject<HTMLElement |
         if (contactsErr) throw contactsErr;
       }
 
-      if (!data.session) {
+      if (!hasSession) {
         toast.success("Account created", { description: "Please verify your email, then login." });
         setTabSafe("login");
         return;

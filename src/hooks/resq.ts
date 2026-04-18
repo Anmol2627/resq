@@ -2,15 +2,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   acceptIncident,
   createIncident,
+  getAvailableResponders,
+  getIncidentById,
   getMyEmergencyContacts,
+  getMyIncidents,
+  getMapUsers,
   getMyProfile,
   getOpenIncidents,
   setAvailability,
+  updateMyLocation,
   updateMyProfile,
   upsertMyEmergencyContacts,
   type IncidentRow,
   type IncidentSeverity,
   type IncidentType,
+  type MapUser,
+  type ResponderPreview,
 } from "@/lib/resq";
 
 export function useMyProfile() {
@@ -77,6 +84,39 @@ export function useOpenIncidents() {
   });
 }
 
+export function useMyIncidents() {
+  return useQuery({
+    queryKey: ["incidents", "mine"],
+    queryFn: getMyIncidents,
+    refetchInterval: 5000,
+  });
+}
+
+export function useMapUsers() {
+  return useQuery({
+    queryKey: ["map", "users"],
+    queryFn: getMapUsers,
+    refetchInterval: 5000,
+  });
+}
+
+export function useIncident(incidentId?: string) {
+  return useQuery({
+    queryKey: ["incidents", "one", incidentId],
+    queryFn: () => (incidentId ? getIncidentById(incidentId) : Promise.resolve(null)),
+    enabled: !!incidentId,
+    refetchInterval: 3000,
+  });
+}
+
+export function useAvailableResponders() {
+  return useQuery({
+    queryKey: ["responders", "available"],
+    queryFn: getAvailableResponders,
+    refetchInterval: 5000,
+  });
+}
+
 export function useAcceptIncident() {
   const qc = useQueryClient();
   return useMutation({
@@ -87,5 +127,17 @@ export function useAcceptIncident() {
   });
 }
 
+export function useUpdateMyLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lat, lng }: { lat: number; lng: number }) => updateMyLocation(lat, lng),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["map", "users"] });
+    },
+  });
+}
+
 export type { IncidentRow };
+export type { MapUser };
+export type { ResponderPreview };
 

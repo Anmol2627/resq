@@ -1,7 +1,6 @@
 import { Home, Map, Bell, User, Zap, Shield, LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavScreen } from "./BottomNav";
-import { useNavigate } from "react-router-dom";
 import { useMyProfile } from "@/hooks/resq";
 
 const items: { id: NavScreen; label: string; icon: typeof Home }[] = [
@@ -16,13 +15,14 @@ export const DesktopSidebar = ({
   onChange,
   onSos,
   onOpenSettings,
+  onOpenSkills,
 }: {
   active: NavScreen;
   onChange: (id: NavScreen) => void;
   onSos: () => void;
   onOpenSettings: () => void;
+  onOpenSkills: () => void;
 }) => {
-  const navigate = useNavigate();
   const { data: profile } = useMyProfile();
   const initials = profile ? `${profile.first_name[0] ?? ""}${profile.last_name[0] ?? ""}`.toUpperCase() : "--";
   const name = profile ? `${profile.first_name} ${profile.last_name}` : "No profile";
@@ -101,7 +101,7 @@ export const DesktopSidebar = ({
 
         <div className="pt-6 px-3 pb-2 font-mono text-[9px] tracking-widest-2 text-muted-fg uppercase">System</div>
         {[
-          { label: "Skills Library", icon: Shield, action: () => navigate("/skills-library") },
+          { label: "Skills Library", icon: Shield, action: onOpenSkills },
           { label: "Settings", icon: Settings, action: onOpenSettings },
         ].map((s) => (
           <button

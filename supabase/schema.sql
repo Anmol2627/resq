@@ -30,10 +30,15 @@ create table if not exists public.profiles (
   chronic_conditions text null,
   medications text null,
   medical_issues text null,
+  current_lat double precision null,
+  current_lng double precision null,
   availability boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists current_lat double precision null;
+alter table public.profiles add column if not exists current_lng double precision null;
 
 drop trigger if exists trg_profiles_updated_at on public.profiles;
 create trigger trg_profiles_updated_at
@@ -79,11 +84,11 @@ alter table public.emergency_contacts enable row level security;
 alter table public.incidents enable row level security;
 
 -- Profiles policies
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own"
+drop policy if exists "profiles_select_authenticated" on public.profiles;
+create policy "profiles_select_authenticated"
 on public.profiles
 for select
-using (auth.uid() = id);
+using (auth.uid() is not null);
 
 drop policy if exists "profiles_insert_own" on public.profiles;
 create policy "profiles_insert_own"

@@ -3,21 +3,56 @@ import { Plus, Minus, Crosshair, Layers, ChevronRight, Phone, MessageSquare } fr
 import { LeafletMap } from "@/components/nexus/LeafletMap";
 import { liveResponders, pendingResponders, skillColors } from "@/lib/nexus-data";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMapUsers, useOpenIncidents, useUpdateMyLocation } from "@/hooks/resq";
 
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export const LiveMap = () => {
   const [elapsed, setElapsed] = useState(272);
+  const incidentsQuery = useOpenIncidents();
+  const usersQuery = useMapUsers();
+  const updateLocation = useUpdateMyLocation();
+  const incidents = incidentsQuery.data ?? [];
+  const mapUsers = usersQuery.data ?? [];
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const syncLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          updateLocation.mutate({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        },
+        () => undefined,
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 12000 }
+      );
+    };
+
+    syncLocation();
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        updateLocation.mutate({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => undefined,
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 12000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [updateLocation]);
+
   return (
     <div className="pb-28">
       {/* Map */}
       <div className="relative">
-        <LeafletMap height={420} />
+        <LeafletMap height={420} users={mapUsers} incidents={incidents} />
 
         {/* Status banner */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-nav border border-emergency/40"
@@ -36,6 +71,25 @@ export const LiveMap = () => {
           ))}
         </div>
       </div>
+
+      <section className="px-6 pt-4">
+        <div className="rounded-xl bg-card-elev border border-subtle p-3">
+          <div className="font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">
+            Open incidents: {incidents.length}
+          </div>
+          <div className="mt-1 font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">
+            Registered users on map: {mapUsers.length}
+          </div>
+          <div className="mt-2 space-y-1">
+            {incidents.slice(0, 3).map((inc) => (
+              <div key={inc.id} className="text-[12px] text-secondary-fg">
+                {inc.type.toUpperCase()} · {inc.severity} · {new Date(inc.created_at).toLocaleTimeString()}
+              </div>
+            ))}
+            {!incidents.length && <div className="text-[12px] text-muted-fg">No live incidents yet.</div>}
+          </div>
+        </div>
+      </section>
 
       {/* Responders panel (hidden on desktop so center stays Leaflet-only) */}
       <section className="px-6 pt-6 lg:hidden">
