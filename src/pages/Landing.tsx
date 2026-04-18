@@ -795,7 +795,14 @@ function AuthSection({ sectionRef }: { sectionRef: React.RefObject<HTMLElement |
       navigate("/app");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Signup failed";
-      toast.error("Signup failed", { description: msg });
+      const lowered = msg.toLowerCase();
+      if (lowered.includes("email rate limit exceeded")) {
+        toast.error("Too many signup attempts", {
+          description: "Please wait a minute before trying again, or disable email confirmation in Supabase Auth settings while testing locally.",
+        });
+      } else {
+        toast.error("Signup failed", { description: msg });
+      }
     } finally {
       setBusy(false);
     }

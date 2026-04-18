@@ -13,7 +13,13 @@ export const LiveMap = () => {
   const usersQuery = useMapUsers();
   const updateLocation = useUpdateMyLocation();
   const incidents = incidentsQuery.data ?? [];
-  const mapUsers = usersQuery.data ?? [];
+  const registeredUsers = usersQuery.data ?? [];
+  const usersWithLocation = registeredUsers.filter(
+    (u) => typeof u.current_lat === "number" && typeof u.current_lng === "number"
+  );
+  const usersWithoutLocation = registeredUsers.filter(
+    (u) => typeof u.current_lat !== "number" || typeof u.current_lng !== "number"
+  );
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
@@ -52,7 +58,7 @@ export const LiveMap = () => {
     <div className="pb-28">
       {/* Map */}
       <div className="relative">
-        <LeafletMap height={420} users={mapUsers} incidents={incidents} />
+        <LeafletMap height={420} users={registeredUsers} incidents={incidents} />
 
         {/* Status banner */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-nav border border-emergency/40"
@@ -78,7 +84,13 @@ export const LiveMap = () => {
             Open incidents: {incidents.length}
           </div>
           <div className="mt-1 font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">
-            Registered users on map: {mapUsers.length}
+            Total registered users: {registeredUsers.length}
+          </div>
+          <div className="mt-1 font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">
+            Users sharing location: {usersWithLocation.length}
+          </div>
+          <div className="mt-1 font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase">
+            Pending location permission: {usersWithoutLocation.length}
           </div>
           <div className="mt-2 space-y-1">
             {incidents.slice(0, 3).map((inc) => (
@@ -88,6 +100,25 @@ export const LiveMap = () => {
             ))}
             {!incidents.length && <div className="text-[12px] text-muted-fg">No live incidents yet.</div>}
           </div>
+          {usersWithoutLocation.length > 0 && (
+            <div className="mt-3 rounded-lg border border-subtle bg-elevated/40 p-2.5">
+              <div className="font-mono text-[10px] tracking-widest-2 text-muted-fg uppercase">
+                Registered users not sharing location yet
+              </div>
+              <div className="mt-2 space-y-1">
+                {usersWithoutLocation.slice(0, 6).map((u) => (
+                  <div key={u.id} className="text-[12px] text-secondary-fg">
+                    {u.first_name} {u.last_name} · {u.role.toUpperCase()}
+                  </div>
+                ))}
+                {usersWithoutLocation.length > 6 && (
+                  <div className="text-[11px] text-muted-fg">
+                    +{usersWithoutLocation.length - 6} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

@@ -308,8 +308,6 @@ export async function getMapUsers(): Promise<MapUser[]> {
   const { data, error } = await sb
     .from("profiles")
     .select("id,first_name,last_name,role,availability,current_lat,current_lng")
-    .not("current_lat", "is", null)
-    .not("current_lng", "is", null)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as MapUser[];
