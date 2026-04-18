@@ -1,42 +1,119 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, MapPin, Send, AlertTriangle, AlertCircle, ShieldAlert } from "lucide-react";
 import { emergencyTypes } from "@/lib/nexus-data";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useCreateIncident, useMyEmergencyContacts } from "@/hooks/resq";
 
 export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSent: () => void }) => {
+  const DEFAULT_INDIA_FALLBACK_CONTACT = "9675852627";
   const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [severity, setSeverity] = useState<"MILD" | "MODERATE" | "CRITICAL">("MODERATE");
   const [desc, setDesc] = useState("");
   const [countdown, setCountdown] = useState(5);
-  const [flash, setFlash] = useState(true);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [dispatching, setDispatching] = useState(false);
+  const dispatchedRef = useRef(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => setFlash(false), 60);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (step !== 3) return;
-    if (countdown <= 0) { onSent(); return; }
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [step, countdown, onSent]);
+  const createIncidentMut = useCreateIncident();
+  const contactsQuery = useMyEmergencyContacts();
 
   const typeMeta = emergencyTypes.find((t) => t.id === selectedType);
 
+  const locate = useCallback(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
+    );
+  }, []);
+
+  useEffect(() => {
+    if (step === 2) locate();
+  }, [locate, step]);
+
+  const dispatchNow = useCallback(async () => {
+    if (dispatching || dispatchedRef.current) return;
+    if (!selectedType) {
+      toast.error("Select an emergency type first.");
+      return;
+    }
+    const contacts = (contactsQuery.data ?? []).slice(0, 3);
+
+    const mapsLink =
+      coords != null
+        ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}`
+        : "Location unavailable";
+    const messageText =
+      `SOS ALERT from RESQ+\n` +
+      `Type: ${selectedType.toUpperCase()}\n` +
+      `Severity: ${severity}\n` +
+      `Details: ${desc?.trim() ? desc.trim() : "N/A"}\n` +
+      `Location: ${mapsLink}`;
+    const encodedMessage = encodeURIComponent(messageText);
+
+    const normalizeIndiaPhone = (raw: string) => {
+      const digits = raw.replace(/\D/g, "");
+      if (!digits) return "";
+      if (digits.startsWith("91") && digits.length >= 12) return digits;
+      if (digits.length === 10) return `91${digits}`;
+      return digits;
+    };
+
+    const allPhones = [
+      ...contacts.map((c) => c.phone),
+      DEFAULT_INDIA_FALLBACK_CONTACT, // always notify this number
+    ];
+    const uniquePhones = Array.from(new Set(allPhones.map(normalizeIndiaPhone).filter(Boolean)));
+
+    let opened = 0;
+    for (const phone of uniquePhones) {
+      const wa = `https://wa.me/${phone}?text=${encodedMessage}`;
+      const win = window.open(wa, "_blank", "noopener,noreferrer");
+      if (win) opened += 1;
+    }
+
+    if (opened === 0) {
+      toast.error("Could not open WhatsApp", {
+        description: "Allow popups for localhost and retry.",
+      });
+      return;
+    }
+
+    setDispatching(true);
+    dispatchedRef.current = true;
+    try {
+      await createIncidentMut.mutateAsync({
+        type: selectedType as "medical" | "fire" | "safety" | "technical",
+        severity,
+        description: desc,
+        lat: coords?.lat,
+        lng: coords?.lng,
+      });
+      toast.success("SOS dispatched", { description: `Opened WhatsApp for ${opened} contact(s). Tap send in each chat.` });
+      onSent();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to dispatch SOS";
+      // Keep flow usable even if DB insert fails after WhatsApp opens.
+      toast("SOS message sent", { description: `WhatsApp opened, but incident save failed: ${msg}` });
+      onSent();
+    } finally {
+      setDispatching(false);
+    }
+  }, [contactsQuery.data, coords, createIncidentMut, desc, dispatching, onSent, selectedType, severity]);
+
+  useEffect(() => {
+    if (step !== 3) return;
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [step, countdown]);
+
   return (
     <div className="relative min-h-screen pb-32">
-      <AnimatePresence>
-        {flash && (
-          <motion.div
-            initial={{ opacity: 0.9 }} animate={{ opacity: 0 }} transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-primary-fg z-[100] pointer-events-none"
-          />
-        )}
-      </AnimatePresence>
-
       {/* radial bloom */}
       <div className="absolute inset-0 pointer-events-none"
            style={{ background: 'radial-gradient(circle at 50% 30%, hsl(var(--emergency) / 0.12), transparent 60%)' }} />
@@ -127,14 +204,16 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
             <div className="mb-8">
               <div className="font-mono text-[10px] tracking-widest-2 text-secondary-fg uppercase mb-3">Severity level</div>
               <div className="grid grid-cols-3 gap-3">
-                {[
-                  { id: "MILD", icon: AlertCircle, color: "text-safe", bg: "bg-safe-dim", border: "border-safe/30" },
-                  { id: "MODERATE", icon: AlertTriangle, color: "text-amber", bg: "bg-amber-dim", border: "border-amber-acc/30" },
-                  { id: "CRITICAL", icon: ShieldAlert, color: "text-emergency", bg: "bg-emergency-dim", border: "border-emergency/30" },
-                ].map((s) => (
+                {(
+                  [
+                    { id: "MILD", icon: AlertCircle, color: "text-safe", bg: "bg-safe-dim", border: "border-safe/30" },
+                    { id: "MODERATE", icon: AlertTriangle, color: "text-amber", bg: "bg-amber-dim", border: "border-amber-acc/30" },
+                    { id: "CRITICAL", icon: ShieldAlert, color: "text-emergency", bg: "bg-emergency-dim", border: "border-emergency/30" },
+                  ] as const
+                ).map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => setSeverity(s.id as any)}
+                    onClick={() => setSeverity(s.id)}
                     className={cn(
                       "flex flex-col items-center gap-2.5 p-4 rounded-2xl border-2 transition-all duration-300",
                       severity === s.id
@@ -170,10 +249,12 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
                 </div>
                 <div>
                   <div className="text-[12px] font-semibold text-primary-fg">Using current location</div>
-                  <div className="font-mono text-[10px] text-muted-fg">43.6532° N, 79.3832° W</div>
+                  <div className="font-mono text-[10px] text-muted-fg">
+                    {coords ? `${coords.lat.toFixed(4)}° N, ${coords.lng.toFixed(4)}° W` : "Locating..."}
+                  </div>
                 </div>
               </div>
-              <button className="font-mono text-[10px] tracking-widest-2 text-info uppercase">CHANGE</button>
+              <button onClick={locate} className="font-mono text-[10px] tracking-widest-2 text-info uppercase">REFRESH</button>
             </div>
           </>
         )}
@@ -227,11 +308,11 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
 
             <div className="flex flex-col gap-3 mt-8">
               <button
-                onClick={onSent}
+                onClick={dispatchNow}
                 className="w-full h-16 rounded-2xl bg-emergency text-primary-fg font-display font-bold tracking-widest-2 text-[16px] glow-red flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <Send className="h-5 w-5" />
-                DISPATCH NOW
+                {dispatching ? "DISPATCHING..." : "DISPATCH NOW"}
               </button>
               <button
                 onClick={() => setStep(2)}

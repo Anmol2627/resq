@@ -33,6 +33,11 @@ export const ActiveTracking = ({ onResolve }: { onResolve: () => void }) => {
     setHoldProgress(0);
   };
 
+  const openDirections = () => {
+    const url = "https://www.google.com/maps/dir/?api=1&destination=47%20Brunswick%20Ave%2C%20Toronto&travelmode=driving";
+    window.location.href = url;
+  };
+
   return (
     <div className="pb-28">
       {/* Header */}
@@ -42,6 +47,12 @@ export const ActiveTracking = ({ onResolve }: { onResolve: () => void }) => {
           <span className="font-mono text-[10px] tracking-widest-2 text-muted-fg uppercase">OPEN FOR {fmt(elapsed)}</span>
         </div>
         <p className="text-[12px] text-secondary-fg mt-1">3 responders en route · Closest in 1.8 min</p>
+        <button
+          onClick={openDirections}
+          className="mt-3 rounded-xl border border-info/40 bg-info-dim px-3 py-2 font-mono text-[10px] tracking-widest-2 text-info uppercase"
+        >
+          Directions
+        </button>
       </header>
 
       {/* Map */}

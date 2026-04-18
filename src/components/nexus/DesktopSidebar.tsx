@@ -2,6 +2,7 @@ import { Home, Map, Bell, User, Zap, Shield, LogOut, Settings } from "lucide-rea
 import { cn } from "@/lib/utils";
 import type { NavScreen } from "./BottomNav";
 import { useNavigate } from "react-router-dom";
+import { useMyProfile } from "@/hooks/resq";
 
 const items: { id: NavScreen; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Emergency Node", icon: Home },
@@ -14,12 +15,18 @@ export const DesktopSidebar = ({
   active,
   onChange,
   onSos,
+  onOpenSettings,
 }: {
   active: NavScreen;
   onChange: (id: NavScreen) => void;
   onSos: () => void;
+  onOpenSettings: () => void;
 }) => {
   const navigate = useNavigate();
+  const { data: profile } = useMyProfile();
+  const initials = profile ? `${profile.first_name[0] ?? ""}${profile.last_name[0] ?? ""}`.toUpperCase() : "--";
+  const name = profile ? `${profile.first_name} ${profile.last_name}` : "No profile";
+  const status = profile?.availability ? "● On-call" : "● Off-duty";
   return (
     <aside className="hidden lg:flex flex-col w-[260px] shrink-0 h-screen sticky top-0 border-r border-subtle bg-surface">
       {/* Brand */}
@@ -94,12 +101,14 @@ export const DesktopSidebar = ({
 
         <div className="pt-6 px-3 pb-2 font-mono text-[9px] tracking-widest-2 text-muted-fg uppercase">System</div>
         {[
-          { label: "Skills Library", icon: Shield, id: "skills" },
-{ label: "Settings", icon: Settings, id: "settings" },
-].map((s) => (
-  <button key={s.label}
-          onClick={() => onChange(s.id as NavScreen)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary-fg hover:text-primary-fg hover:bg-elevated transition-colors text-left">
+          { label: "Skills Library", icon: Shield, action: () => navigate("/skills-library") },
+          { label: "Settings", icon: Settings, action: onOpenSettings },
+        ].map((s) => (
+          <button
+            key={s.label}
+            onClick={s.action}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary-fg hover:text-primary-fg hover:bg-elevated transition-colors text-left"
+          >
             <s.icon className="h-4 w-4" strokeWidth={2.2} />
             <span className="text-[13px] font-medium">{s.label}</span>
           </button>
@@ -110,11 +119,11 @@ export const DesktopSidebar = ({
       <div className="border-t border-subtle p-4">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-emergency to-orange grid place-items-center font-display font-bold text-[12px] text-primary-fg ring-1 ring-emergency/40">
-            MC
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-primary-fg leading-tight truncate">Maya Chen</div>
-            <div className="font-mono text-[10px] text-safe tracking-wider uppercase">● On-call</div>
+            <div className="text-[13px] font-semibold text-primary-fg leading-tight truncate">{name}</div>
+            <div className="font-mono text-[10px] text-safe tracking-wider uppercase">{status}</div>
           </div>
           <button className="h-8 w-8 grid place-items-center rounded-md text-muted-fg hover:text-primary-fg hover:bg-elevated transition-colors">
             <LogOut className="h-4 w-4" />

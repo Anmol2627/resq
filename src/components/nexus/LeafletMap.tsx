@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type * as Leaflet from "leaflet";
 
 const defaultCenter: [number, number] = [43.6532, -79.3832];
 const darkLayer = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -7,13 +8,13 @@ const darkAttribution =
 
 export const LeafletMap = ({ height = 420 }: { height?: number }) => {
   const mapNode = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const leafletRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const accuracyRef = useRef<any>(null);
+  const mapRef = useRef<Leaflet.Map | null>(null);
+  const leafletRef = useRef<typeof Leaflet | null>(null);
+  const markerRef = useRef<Leaflet.CircleMarker | null>(null);
+  const accuracyRef = useRef<Leaflet.Circle | null>(null);
   const [status, setStatus] = useState("Locating current position...");
 
-  const setPosition = (coords: [number, number], accuracy?: number) => {
+  const setPosition = useCallback((coords: [number, number], accuracy?: number) => {
     if (!mapRef.current || !leafletRef.current) return;
     const L = leafletRef.current;
 
@@ -45,9 +46,9 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
         }).addTo(mapRef.current);
       }
     }
-  };
+  }, []);
 
-  const locateCurrentPosition = () => {
+  const locateCurrentPosition = useCallback(() => {
     if (!navigator.geolocation) {
       setStatus("Geolocation not supported");
       return;
@@ -65,7 +66,7 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
     );
-  };
+  }, [setPosition]);
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current) return;
@@ -73,7 +74,7 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
     let cancelled = false;
 
     const initMap = async () => {
-      const L = (await import("leaflet")).default;
+      const L = (await import("leaflet")).default as unknown as typeof Leaflet;
       await import("leaflet/dist/leaflet.css");
 
       if (cancelled || !mapNode.current) return;
@@ -108,7 +109,7 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [locateCurrentPosition]);
 
   return (
     <div className="relative rounded-[32px] overflow-hidden border border-subtle bg-black" style={{ height }}>

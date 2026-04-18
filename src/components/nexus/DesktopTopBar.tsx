@@ -1,6 +1,10 @@
 import { Bell, Search, Activity, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import { useOpenIncidents } from "@/hooks/resq";
 
 export const DesktopTopBar = ({ title, subtitle }: { title: string; subtitle?: string }) => {
+  const { data: incidents } = useOpenIncidents();
+  const openCount = incidents?.length ?? 0;
+
   return (
     <header className="hidden lg:flex items-center justify-between gap-6 px-8 h-[72px] border-b border-subtle bg-surface/60 backdrop-blur-nav sticky top-0 z-30">
       <div>
@@ -11,10 +15,10 @@ export const DesktopTopBar = ({ title, subtitle }: { title: string; subtitle?: s
       {/* Live KPI strip */}
       <div className="flex items-center gap-2">
         {[
-          { icon: Users, label: "RESPONDERS", val: "12", tone: "safe" },
-          { icon: AlertTriangle, label: "ACTIVE", val: "1", tone: "emergency" },
-          { icon: TrendingUp, label: "AVG ETA", val: "3.4m", tone: "amber" },
-          { icon: Activity, label: "UPTIME", val: "99.98%", tone: "info" },
+          { icon: Users, label: "RESPONDERS", val: "LIVE", tone: "safe" },
+          { icon: AlertTriangle, label: "ACTIVE", val: String(openCount), tone: "emergency" },
+          { icon: TrendingUp, label: "AVG ETA", val: "--", tone: "amber" },
+          { icon: Activity, label: "UPTIME", val: "LIVE", tone: "info" },
         ].map((k) => (
           <div key={k.label} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-elevated border border-subtle">
             <k.icon className={`h-3.5 w-3.5 text-${k.tone === 'safe' ? 'safe' : k.tone === 'emergency' ? 'emergency' : k.tone === 'amber' ? 'amber' : 'info'}`} />

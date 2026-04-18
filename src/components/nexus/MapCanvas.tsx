@@ -1,6 +1,3 @@
-import { liveResponders } from "@/lib/nexus-data";
-import { skillColors } from "@/lib/nexus-data";
-
 // Stylized SVG dark map. Not real tiles — purely visual.
 export const MapCanvas = ({ height = 360 }: { height?: number }) => {
   return (
@@ -47,24 +44,6 @@ export const MapCanvas = ({ height = 360 }: { height?: number }) => {
           <text x="20" y="320">LAKESHORE</text>
         </g>
 
-        {/* connection lines from emergency to responders */}
-        {liveResponders.map((r, i) => {
-          const angle = (i / liveResponders.length) * Math.PI * 2;
-          const ex = 200 + Math.cos(angle) * (60 + i * 18);
-          const ey = 175 + Math.sin(angle) * (45 + i * 14);
-          return (
-            <line
-              key={r.id}
-              x1="200" y1="175" x2={ex} y2={ey}
-              stroke={skillColors[r.type].color}
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-              opacity="0.55"
-              style={{ animation: 'dash-flow 1s linear infinite' }}
-            />
-          );
-        })}
-
         {/* Emergency hexagon center */}
         <g transform="translate(200 175)">
           <circle r="28" fill="hsl(var(--emergency) / 0.15)">
@@ -88,21 +67,6 @@ export const MapCanvas = ({ height = 360 }: { height?: number }) => {
           </circle>
         </g>
 
-        {/* Responder markers */}
-        {liveResponders.map((r, i) => {
-          const angle = (i / liveResponders.length) * Math.PI * 2;
-          const ex = 200 + Math.cos(angle) * (60 + i * 18);
-          const ey = 175 + Math.sin(angle) * (45 + i * 14);
-          return (
-            <g key={r.id} transform={`translate(${ex} ${ey})`}>
-              <circle r="11" fill={skillColors[r.type].color} stroke="hsl(var(--bg-void))" strokeWidth="2"
-                style={{ filter: `drop-shadow(0 0 4px ${skillColors[r.type].color})` }} />
-              <text textAnchor="middle" y="3" fontFamily="DM Sans" fontSize="8" fontWeight="700" fill="hsl(var(--bg-void))">
-                {r.initials}
-              </text>
-            </g>
-          );
-        })}
       </svg>
     </div>
   );

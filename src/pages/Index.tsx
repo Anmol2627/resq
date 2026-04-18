@@ -14,8 +14,9 @@ import { ActiveTracking } from "@/screens/ActiveTracking";
 import { Operations } from "@/screens/Operations";
 import { toast } from "sonner";
 import SkillsLibrary from "@/screens/SkillsLibrary";
+import Settings from "@/screens/Settings";
 
-type Screen = NavScreen | "trigger" | "tracking" | "skills";
+type Screen = NavScreen | "trigger" | "tracking" | "skills" | "settings";
 
 const titles: Record<Screen, { title: string; subtitle: string }> = {
   dashboard: { title: "MISSION CONTROL", subtitle: "Emergency Quick-Action Node" },
@@ -26,6 +27,7 @@ const titles: Record<Screen, { title: string; subtitle: string }> = {
   alert: { title: "OPERATIONS", subtitle: "Live sector activity & stats" },
   profile: { title: "RESPONDER PROFILE", subtitle: "Skills · Reputation · Availability" },
   skills: { title: "SKILLS LIBRARY", subtitle: "Live skill registry" },
+  settings: { title: "SETTINGS", subtitle: "Profile, emergency contacts, and account" },
 };
 
 const Index = () => {
@@ -61,8 +63,10 @@ const Index = () => {
         );
       case "map":
         return <LiveMap />;
-        case "skills":
-          return <SkillsLibrary />;
+      case "skills":
+        return <SkillsLibrary />;
+      case "settings":
+        return <Settings />;
       case "alert":
         return <Operations />;
       case "profile":
@@ -73,7 +77,9 @@ const Index = () => {
   };
 
   const navActive: NavScreen =
-    screen === "trigger" || screen === "tracking" ? "sos" : (screen as NavScreen);
+    screen === "trigger" || screen === "tracking" ? "sos" :
+    screen === "skills" || screen === "settings" ? "profile" :
+    (screen as NavScreen);
   const meta = titles[screen] || titles.dashboard;
 
   return (
@@ -101,6 +107,7 @@ const Index = () => {
           active={navActive}
           onChange={handleNav}
           onSos={() => setScreen("trigger")}
+          onOpenSettings={() => setScreen("settings")}
         />
 
         <div className="flex-1 flex flex-col min-w-0">

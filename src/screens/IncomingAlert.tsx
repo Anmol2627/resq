@@ -4,11 +4,17 @@ import { incomingAlert } from "@/lib/nexus-data";
 
 export const IncomingAlert = ({ onRespond, onDecline }: { onRespond: () => void; onDecline: () => void }) => {
   const [timeLeft, setTimeLeft] = useState(30);
+  const [accepted, setAccepted] = useState(false);
   useEffect(() => {
+    if (accepted) return;
     if (timeLeft <= 0) { onDecline(); return; }
     const t = setTimeout(() => setTimeLeft((v) => v - 1), 1000);
     return () => clearTimeout(t);
-  }, [timeLeft, onDecline]);
+  }, [accepted, timeLeft, onDecline]);
+
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    `${incomingAlert.address}, ${incomingAlert.city}`,
+  )}&travelmode=driving`;
 
   return (
     <div className="relative min-h-screen pb-32">
@@ -106,16 +112,34 @@ export const IncomingAlert = ({ onRespond, onDecline }: { onRespond: () => void;
                style={{ width: `${(timeLeft / 30) * 100}%`, boxShadow: '0 0 8px hsl(var(--emergency))' }} />
         </div>
 
-        <div className="flex gap-3">
-          <button onClick={onDecline}
-                  className="h-12 px-5 rounded-xl border border-subtle text-secondary-fg font-display font-bold text-[13px] tracking-widest-2 hover:border-primary-fg/30 transition-colors">
-            DECLINE
-          </button>
-          <button onClick={onRespond}
-                  className="flex-1 h-12 rounded-xl bg-emergency text-primary-fg font-display font-bold text-[16px] tracking-widest-2 glow-red active:scale-[0.98] transition-transform">
-            RESPOND NOW
-          </button>
-        </div>
+        {!accepted ? (
+          <div className="flex gap-3">
+            <button onClick={onDecline}
+                    className="h-12 px-5 rounded-xl border border-subtle text-secondary-fg font-display font-bold text-[13px] tracking-widest-2 hover:border-primary-fg/30 transition-colors">
+              DECLINE
+            </button>
+            <button
+              onClick={() => {
+                setAccepted(true);
+                onRespond();
+              }}
+              className="flex-1 h-12 rounded-xl bg-emergency text-primary-fg font-display font-bold text-[16px] tracking-widest-2 glow-red active:scale-[0.98] transition-transform"
+            >
+              RESPOND NOW
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                window.location.href = directionsUrl;
+              }}
+              className="flex-1 h-12 rounded-xl bg-safe text-primary-fg font-display font-bold text-[14px] tracking-widest-2 active:scale-[0.98] transition-transform"
+            >
+              OPEN DIRECTIONS
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
