@@ -1,23 +1,41 @@
 import { useEffect, useRef, useState } from "react";
 import { Phone, MessageCircle, ChevronUp, Send } from "lucide-react";
-import { MapCanvas } from "@/components/nexus/MapCanvas";
+import { LeafletMap } from "@/components/nexus/LeafletMap";
 import { cn } from "@/lib/utils";
-import { useAvailableResponders, useIncident, type IncidentRow } from "@/hooks/resq";
+import { toast } from "sonner";
+import {
+  useAvailableResponders,
+  useIncident,
+  useMapUsers,
+  useMyEmergencyContacts,
+  useResolveIncident,
+  type IncidentRow,
+} from "@/hooks/resq";
 
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 const QUICK = ["I AM SAFE", "NEED AMBULANCE", "FIRE SPREADING"];
 
 export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void; incident: IncidentRow | null }) => {
+  const DEFAULT_INDIA_FALLBACK_CONTACT = "9675852627";
   const [elapsed, setElapsed] = useState(374);
   const [expanded, setExpanded] = useState(false);
   const [holdProgress, setHoldProgress] = useState(0);
   const holdRef = useRef<number | null>(null);
   const incidentQuery = useIncident(incident?.id);
   const respondersQuery = useAvailableResponders();
+  const contactsQuery = useMyEmergencyContacts();
+  const mapUsersQuery = useMapUsers();
+  const resolveIncidentMut = useResolveIncident();
   const incidentLive = incidentQuery.data ?? incident;
   const availableResponders = respondersQuery.data ?? [];
+  const mapUsers = mapUsersQuery.data ?? [];
   const acceptedResponder = availableResponders.find((r) => r.id === incidentLive?.accepted_by);
+  const responderEtas = availableResponders.slice(0, 3).map((r, idx) => ({
+    id: r.id,
+    name: `${r.first_name} ${r.last_name}`,
+    eta: `${4 + idx * 3} min`,
+  }));
 
   useEffect(() => {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -25,10 +43,22 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
   }, []);
 
   const startHold = () => {
+    if (!incidentLive?.id) return;
     const start = Date.now();
     holdRef.current = window.setInterval(() => {
       const p = (Date.now() - start) / 1500;
-      if (p >= 1) { cancelHold(); onResolve(); }
+      if (p >= 1) {
+        cancelHold();
+        resolveIncidentMut.mutate(incidentLive.id, {
+          onSuccess: () => {
+            toast.success("Incident resolved");
+            onResolve();
+          },
+          onError: () => {
+            toast.error("Could not resolve incident");
+          },
+        });
+      }
       else setHoldProgress(p);
     }, 16);
   };
@@ -47,6 +77,54 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
     window.location.href = url;
   };
 
+  const sendWhatsappAlert = () => {
+    if (!incidentLive) {
+      toast.error("Incident unavailable", { description: "Wait a moment for SOS details to sync." });
+      return;
+    }
+    const contacts = contactsQuery.data ?? [];
+    const normalizeIndiaPhone = (raw: string) => {
+      const digits = raw.replace(/\D/g, "");
+      if (!digits) return "";
+      if (digits.startsWith("91") && digits.length >= 12) return digits;
+      if (digits.length === 10) return `91${digits}`;
+      return digits;
+    };
+
+    const allPhones = [
+      ...contacts.map((c) => c.phone),
+      DEFAULT_INDIA_FALLBACK_CONTACT,
+    ];
+    const uniquePhones = Array.from(new Set(allPhones.map(normalizeIndiaPhone).filter(Boolean)));
+    if (!uniquePhones.length) {
+      toast.error("No emergency contacts found");
+      return;
+    }
+
+    const mapsLink =
+      incidentLive.lat != null && incidentLive.lng != null
+        ? `https://www.google.com/maps?q=${incidentLive.lat},${incidentLive.lng}`
+        : "Location unavailable";
+    const messageText =
+      `SOS ALERT from RESQ+\n` +
+      `Type: ${incidentLive.type.toUpperCase()}\n` +
+      `Severity: ${incidentLive.severity}\n` +
+      `Details: ${incidentLive.description?.trim() ? incidentLive.description.trim() : "N/A"}\n` +
+      `Location: ${mapsLink}`;
+    const encoded = encodeURIComponent(messageText);
+
+    let opened = 0;
+    uniquePhones.forEach((phone) => {
+      const win = window.open(`https://wa.me/${phone}?text=${encoded}`, "_blank", "noopener,noreferrer");
+      if (win) opened += 1;
+    });
+    if (opened === 0) {
+      toast.error("Could not open WhatsApp", { description: "Allow popups and try again." });
+      return;
+    }
+    toast.success("WhatsApp alert opened", { description: `Opened ${opened} chat(s). Tap send in each.` });
+  };
+
   return (
     <div className="pb-28">
       {/* Header */}
@@ -58,16 +136,24 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
         <p className="text-[12px] text-secondary-fg mt-1">
           Nearby responders: {availableResponders.length} · Coming: {incidentLive?.accepted_by ? 1 : 0}
         </p>
-        <button
-          onClick={openDirections}
-          className="mt-3 rounded-xl border border-info/40 bg-info-dim px-3 py-2 font-mono text-[10px] tracking-widest-2 text-info uppercase"
-        >
-          Directions
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={sendWhatsappAlert}
+            className="rounded-xl border border-safe/40 bg-safe-dim px-3 py-2 font-mono text-[10px] tracking-widest-2 text-safe uppercase"
+          >
+            Send WhatsApp Alert
+          </button>
+          <button
+            onClick={openDirections}
+            className="rounded-xl border border-info/40 bg-info-dim px-3 py-2 font-mono text-[10px] tracking-widest-2 text-info uppercase"
+          >
+            Directions
+          </button>
+        </div>
       </header>
 
       {/* Map */}
-      <MapCanvas height={300} />
+      <LeafletMap height={300} users={mapUsers} incidents={incidentLive ? [incidentLive] : []} />
 
       {/* Responders panel (collapsible) */}
       <section className="px-6 -mt-4 relative z-10">
@@ -88,6 +174,15 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
             <div className="mt-4 space-y-2 animate-fade-in">
               <div className="p-3 rounded-xl bg-elevated border border-subtle">
                 <div className="text-[12px] text-muted-fg">Nearby responders notified: {availableResponders.length}</div>
+                {responderEtas.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {responderEtas.map((r) => (
+                      <div key={r.id} className="text-[12px] text-secondary-fg">
+                        {r.name} · ETA {r.eta}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {acceptedResponder ? (
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-elevated border border-subtle">
@@ -146,7 +241,19 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
 
       {/* Resolve */}
       <section className="px-6 mt-6 space-y-3">
-        <button onClick={onResolve}
+        <button
+          onClick={() => {
+            if (!incidentLive?.id) return;
+            resolveIncidentMut.mutate(incidentLive.id, {
+              onSuccess: () => {
+                toast.success("Issue resolved");
+                onResolve();
+              },
+              onError: () => {
+                toast.error("Could not resolve incident");
+              },
+            });
+          }}
                 className="w-full py-3 rounded-xl border border-safe/40 bg-safe-dim text-safe font-display font-bold text-[13px] tracking-widest-2">
           MARK AS RESOLVED
         </button>

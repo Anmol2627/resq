@@ -136,7 +136,7 @@ on public.incidents
 for select
 using (
   auth.uid() is not null
-  and (auth.uid() = user_id or status = 'OPEN')
+  and (auth.uid() = user_id or status = 'OPEN' or accepted_by = auth.uid())
 );
 
 drop policy if exists "incidents_insert_own" on public.incidents;

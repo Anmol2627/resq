@@ -3,12 +3,14 @@ import {
   acceptIncident,
   createIncident,
   getAvailableResponders,
+  getIncidentHistory,
   getIncidentById,
   getMyEmergencyContacts,
   getMyIncidents,
   getMapUsers,
   getMyProfile,
   getOpenIncidents,
+  resolveIncident,
   setAvailability,
   updateMyLocation,
   updateMyProfile,
@@ -84,6 +86,14 @@ export function useOpenIncidents() {
   });
 }
 
+export function useIncidentHistory() {
+  return useQuery({
+    queryKey: ["incidents", "history"],
+    queryFn: getIncidentHistory,
+    refetchInterval: 5000,
+  });
+}
+
 export function useMyIncidents() {
   return useQuery({
     queryKey: ["incidents", "mine"],
@@ -123,6 +133,18 @@ export function useAcceptIncident() {
     mutationFn: (incidentId: string) => acceptIncident(incidentId),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["incidents", "open"] });
+    },
+  });
+}
+
+export function useResolveIncident() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (incidentId: string) => resolveIncident(incidentId),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["incidents", "open"] });
+      await qc.invalidateQueries({ queryKey: ["incidents", "history"] });
+      await qc.invalidateQueries({ queryKey: ["incidents", "mine"] });
     },
   });
 }

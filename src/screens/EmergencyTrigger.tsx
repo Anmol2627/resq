@@ -4,10 +4,9 @@ import { emergencyTypes } from "@/lib/nexus-data";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useCreateIncident, useMyEmergencyContacts, type IncidentRow } from "@/hooks/resq";
+import { useCreateIncident, type IncidentRow } from "@/hooks/resq";
 
 export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSent: (incident?: IncidentRow) => void }) => {
-  const DEFAULT_INDIA_FALLBACK_CONTACT = "9675852627";
   const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [severity, setSeverity] = useState<"MILD" | "MODERATE" | "CRITICAL">("MODERATE");
@@ -18,7 +17,6 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
   const dispatchedRef = useRef(false);
 
   const createIncidentMut = useCreateIncident();
-  const contactsQuery = useMyEmergencyContacts();
 
   const typeMeta = emergencyTypes.find((t) => t.id === selectedType);
 
@@ -41,48 +39,6 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
       toast.error("Select an emergency type first.");
       return;
     }
-    const contacts = (contactsQuery.data ?? []).slice(0, 3);
-
-    const mapsLink =
-      coords != null
-        ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}`
-        : "Location unavailable";
-    const messageText =
-      `SOS ALERT from RESQ+\n` +
-      `Type: ${selectedType.toUpperCase()}\n` +
-      `Severity: ${severity}\n` +
-      `Details: ${desc?.trim() ? desc.trim() : "N/A"}\n` +
-      `Location: ${mapsLink}`;
-    const encodedMessage = encodeURIComponent(messageText);
-
-    const normalizeIndiaPhone = (raw: string) => {
-      const digits = raw.replace(/\D/g, "");
-      if (!digits) return "";
-      if (digits.startsWith("91") && digits.length >= 12) return digits;
-      if (digits.length === 10) return `91${digits}`;
-      return digits;
-    };
-
-    const allPhones = [
-      ...contacts.map((c) => c.phone),
-      DEFAULT_INDIA_FALLBACK_CONTACT, // always notify this number
-    ];
-    const uniquePhones = Array.from(new Set(allPhones.map(normalizeIndiaPhone).filter(Boolean)));
-
-    let opened = 0;
-    for (const phone of uniquePhones) {
-      const wa = `https://wa.me/${phone}?text=${encodedMessage}`;
-      const win = window.open(wa, "_blank", "noopener,noreferrer");
-      if (win) opened += 1;
-    }
-
-    if (opened === 0) {
-      toast.error("Could not open WhatsApp", {
-        description: "Allow popups for localhost and retry.",
-      });
-      return;
-    }
-
     setDispatching(true);
     dispatchedRef.current = true;
     try {
@@ -93,16 +49,16 @@ export const EmergencyTrigger = ({ onBack, onSent }: { onBack: () => void; onSen
         lat: coords?.lat,
         lng: coords?.lng,
       });
-      toast.success("SOS dispatched", { description: `Opened WhatsApp for ${opened} contact(s). Tap send in each chat.` });
+      toast.success("SOS dispatched", { description: "Tracking responders now. You can send WhatsApp alerts from the next screen." });
       onSent(incident);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to dispatch SOS";
-      toast.error("Dispatch failed", { description: `Incident sync failed: ${msg}` });
+      toast.error("Incident sync failed", { description: msg });
       dispatchedRef.current = false;
     } finally {
       setDispatching(false);
     }
-  }, [contactsQuery.data, coords, createIncidentMut, desc, dispatching, onSent, selectedType, severity]);
+  }, [coords, createIncidentMut, desc, dispatching, onSent, selectedType, severity]);
 
   useEffect(() => {
     if (step !== 3) return;

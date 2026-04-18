@@ -258,6 +258,23 @@ export async function getOpenIncidents(): Promise<IncidentRow[]> {
   return (data ?? []) as IncidentRow[];
 }
 
+export async function getIncidentHistory(): Promise<IncidentRow[]> {
+  const sb = requireSupabase();
+  const { data: userRes, error: userErr } = await sb.auth.getUser();
+  if (userErr) throw userErr;
+  const uid = userRes.user?.id;
+  if (!uid) return [];
+
+  const { data, error } = await sb
+    .from("incidents")
+    .select("*")
+    .neq("status", "OPEN")
+    .or(`user_id.eq.${uid},accepted_by.eq.${uid}`)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as IncidentRow[];
+}
+
 export async function getIncidentById(incidentId: string): Promise<IncidentRow | null> {
   const sb = requireSupabase();
   const { data, error } = await sb.from("incidents").select("*").eq("id", incidentId).maybeSingle();
@@ -290,6 +307,23 @@ export async function acceptIncident(incidentId: string): Promise<IncidentRow> {
     .update({ accepted_by: uid, accepted_at: new Date().toISOString() })
     .eq("id", incidentId)
     .is("accepted_by", null)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as IncidentRow;
+}
+
+export async function resolveIncident(incidentId: string): Promise<IncidentRow> {
+  const sb = requireSupabase();
+  const { data: userRes, error: userErr } = await sb.auth.getUser();
+  if (userErr) throw userErr;
+  const uid = userRes.user?.id;
+  if (!uid) throw new Error("Not signed in.");
+
+  const { data, error } = await sb
+    .from("incidents")
+    .update({ status: "RESOLVED", resolved_at: new Date().toISOString() })
+    .eq("id", incidentId)
     .select("*")
     .single();
   if (error) throw error;
