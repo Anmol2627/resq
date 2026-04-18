@@ -75,6 +75,7 @@ const Index = () => {
 
   // Only show the desktop map stage on the dedicated map screen.
   const showDesktopMapStage = screen === "map";
+  const hideDesktopMapStage = !showDesktopMapStage;
 
   return (
     <div className="relative min-h-screen bg-void">
