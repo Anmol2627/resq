@@ -1,6 +1,7 @@
 import { Home, Map, Bell, User, Zap, Shield, LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NavScreen } from "./BottomNav";
+import { useNavigate } from "react-router-dom";
 
 const items: { id: NavScreen; label: string; icon: typeof Home }[] = [
   { id: "dashboard", label: "Emergency Node", icon: Home },
@@ -18,6 +19,7 @@ export const DesktopSidebar = ({
   onChange: (id: NavScreen) => void;
   onSos: () => void;
 }) => {
+  const navigate = useNavigate();
   return (
     <aside className="hidden lg:flex flex-col w-[260px] shrink-0 h-screen sticky top-0 border-r border-subtle bg-surface">
       {/* Brand */}
@@ -45,6 +47,7 @@ export const DesktopSidebar = ({
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
+          
           return (
             <button
               key={item.id}
@@ -91,10 +94,11 @@ export const DesktopSidebar = ({
 
         <div className="pt-6 px-3 pb-2 font-mono text-[9px] tracking-widest-2 text-muted-fg uppercase">System</div>
         {[
-          { label: "Skills Library", icon: Shield },
-          { label: "Settings", icon: Settings },
-        ].map((s) => (
-          <button key={s.label}
+          { label: "Skills Library", icon: Shield, id: "skills" },
+{ label: "Settings", icon: Settings, id: "settings" },
+].map((s) => (
+  <button key={s.label}
+          onClick={() => onChange(s.id as NavScreen)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary-fg hover:text-primary-fg hover:bg-elevated transition-colors text-left">
             <s.icon className="h-4 w-4" strokeWidth={2.2} />
             <span className="text-[13px] font-medium">{s.label}</span>

@@ -13,8 +13,9 @@ import { Profile } from "@/screens/Profile";
 import { ActiveTracking } from "@/screens/ActiveTracking";
 import { Operations } from "@/screens/Operations";
 import { toast } from "sonner";
+import SkillsLibrary from "@/screens/SkillsLibrary";
 
-type Screen = NavScreen | "trigger" | "tracking";
+type Screen = NavScreen | "trigger" | "tracking" | "skills";
 
 const titles: Record<Screen, { title: string; subtitle: string }> = {
   dashboard: { title: "MISSION CONTROL", subtitle: "Emergency Quick-Action Node" },
@@ -24,6 +25,7 @@ const titles: Record<Screen, { title: string; subtitle: string }> = {
   tracking: { title: "ACTIVE INCIDENT", subtitle: "Help is on the way · Tracking responders" },
   alert: { title: "OPERATIONS", subtitle: "Live sector activity & stats" },
   profile: { title: "RESPONDER PROFILE", subtitle: "Skills · Reputation · Availability" },
+  skills: { title: "SKILLS LIBRARY", subtitle: "Live skill registry" },
 };
 
 const Index = () => {
@@ -59,6 +61,8 @@ const Index = () => {
         );
       case "map":
         return <LiveMap />;
+        case "skills":
+          return <SkillsLibrary />;
       case "alert":
         return <Operations />;
       case "profile":
