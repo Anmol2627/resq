@@ -73,8 +73,8 @@ const Index = () => {
     screen === "trigger" || screen === "tracking" ? "sos" : (screen as NavScreen);
   const meta = titles[screen] || titles.dashboard;
 
-  // Hide the extra desktop map stage on the dedicated map screen so the center only contains Leaflet.
-  const showDesktopMapStage = screen !== "map";
+  // Only show the extra desktop map stage on the map screen.
+  const showDesktopMapStage = screen === "map";
   const hideDesktopMapStage = !showDesktopMapStage;
 
   return (
