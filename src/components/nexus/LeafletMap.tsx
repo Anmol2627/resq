@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
 const defaultCenter: [number, number] = [43.6532, -79.3832];
 const darkLayer = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
@@ -9,13 +7,16 @@ const darkAttribution =
 
 export const LeafletMap = ({ height = 420 }: { height?: number }) => {
   const mapNode = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.CircleMarker | null>(null);
-  const accuracyRef = useRef<L.Circle | null>(null);
+  const mapRef = useRef<any>(null);
+  const leafletRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const accuracyRef = useRef<any>(null);
   const [status, setStatus] = useState("Locating current position...");
 
   const setPosition = (coords: [number, number], accuracy?: number) => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !leafletRef.current) return;
+    const L = leafletRef.current;
+
     mapRef.current.setView(coords, 14, { animate: true });
 
     if (markerRef.current) {
@@ -27,7 +28,6 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
         weight: 2,
         fillColor: "#66d9ff",
         fillOpacity: 1,
-        pane: "markerPane",
       }).addTo(mapRef.current);
     }
 
@@ -70,28 +70,41 @@ export const LeafletMap = ({ height = 420 }: { height?: number }) => {
   useEffect(() => {
     if (!mapNode.current || mapRef.current) return;
 
-    mapRef.current = L.map(mapNode.current, {
-      center: defaultCenter,
-      zoom: 13,
-      zoomControl: false,
-      attributionControl: false,
-      minZoom: 3,
-    });
+    let cancelled = false;
 
-    L.tileLayer(darkLayer, {
-      attribution: darkAttribution,
-      maxZoom: 19,
-      subdomains: ["a", "b", "c", "d"],
-      tileSize: 512,
-      zoomOffset: -1,
-    }).addTo(mapRef.current);
+    const initMap = async () => {
+      const L = (await import("leaflet")).default;
+      await import("leaflet/dist/leaflet.css");
 
-    L.control.zoom({ position: "topright" }).addTo(mapRef.current);
-    L.control.attribution({ prefix: false, position: "bottomright" }).addTo(mapRef.current);
+      if (cancelled || !mapNode.current) return;
 
-    locateCurrentPosition();
+      leafletRef.current = L;
+      mapRef.current = L.map(mapNode.current, {
+        center: defaultCenter,
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: false,
+        minZoom: 3,
+      });
+
+      L.tileLayer(darkLayer, {
+        attribution: darkAttribution,
+        maxZoom: 19,
+        subdomains: ["a", "b", "c", "d"],
+        tileSize: 512,
+        zoomOffset: -1,
+      }).addTo(mapRef.current);
+
+      L.control.zoom({ position: "topright" }).addTo(mapRef.current);
+      L.control.attribution({ prefix: false, position: "bottomright" }).addTo(mapRef.current);
+
+      locateCurrentPosition();
+    };
+
+    initMap();
 
     return () => {
+      cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
     };
