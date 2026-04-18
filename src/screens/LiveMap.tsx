@@ -37,8 +37,8 @@ export const LiveMap = () => {
         </div>
       </div>
 
-      {/* Responders panel */}
-      <section className="px-6 pt-6">
+      {/* Responders panel (hidden on desktop so center stays Leaflet-only) */}
+      <section className="px-6 pt-6 lg:hidden">
         <div className="flex items-center gap-4 mb-4">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-safe pulse-dot" />
