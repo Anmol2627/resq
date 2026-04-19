@@ -13,8 +13,21 @@ import {
 } from "@/hooks/resq";
 
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+const NEARBY_RADIUS_KM = 5;
 
 const QUICK = ["I AM SAFE", "NEED AMBULANCE", "FIRE SPREADING"];
+
+function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number) {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const s1 = Math.sin(dLat / 2);
+  const s2 = Math.sin(dLng / 2);
+  const aa = s1 * s1 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * s2 * s2;
+  const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+  return R * c;
+}
 
 export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void; incident: IncidentRow | null }) => {
   const DEFAULT_INDIA_FALLBACK_CONTACT = "9675852627";
@@ -30,8 +43,15 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
   const incidentLive = incidentQuery.data ?? incident;
   const availableResponders = respondersQuery.data ?? [];
   const mapUsers = mapUsersQuery.data ?? [];
+  const nearbyUsers =
+    incidentLive?.lat != null && incidentLive?.lng != null
+      ? mapUsers.filter((u) => {
+          if (u.current_lat == null || u.current_lng == null) return false;
+          return distanceKm(incidentLive.lat as number, incidentLive.lng as number, u.current_lat, u.current_lng) <= NEARBY_RADIUS_KM;
+        })
+      : mapUsers.filter((u) => u.current_lat != null && u.current_lng != null);
   const acceptedResponder = availableResponders.find((r) => r.id === incidentLive?.accepted_by);
-  const responderEtas = availableResponders.slice(0, 3).map((r, idx) => ({
+  const responderEtas = nearbyUsers.slice(0, 5).map((r, idx) => ({
     id: r.id,
     name: `${r.first_name} ${r.last_name}`,
     eta: `${4 + idx * 3} min`,
@@ -134,7 +154,7 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
           <span className="font-mono text-[10px] tracking-widest-2 text-muted-fg uppercase">OPEN FOR {fmt(elapsed)}</span>
         </div>
         <p className="text-[12px] text-secondary-fg mt-1">
-          Nearby responders: {availableResponders.length} · Coming: {incidentLive?.accepted_by ? 1 : 0}
+          Nearby registered users: {nearbyUsers.length} · Coming: {incidentLive?.accepted_by ? 1 : 0}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button
@@ -153,7 +173,7 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
       </header>
 
       {/* Map */}
-      <LeafletMap height={300} users={mapUsers} incidents={incidentLive ? [incidentLive] : []} />
+      <LeafletMap height={300} users={nearbyUsers} incidents={incidentLive ? [incidentLive] : []} />
 
       {/* Responders panel (collapsible) */}
       <section className="px-6 -mt-4 relative z-10">
@@ -173,7 +193,7 @@ export const ActiveTracking = ({ onResolve, incident }: { onResolve: () => void;
           {expanded && (
             <div className="mt-4 space-y-2 animate-fade-in">
               <div className="p-3 rounded-xl bg-elevated border border-subtle">
-                <div className="text-[12px] text-muted-fg">Nearby responders notified: {availableResponders.length}</div>
+                <div className="text-[12px] text-muted-fg">Nearby registered users in radius: {nearbyUsers.length}</div>
                 {responderEtas.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {responderEtas.map((r) => (
