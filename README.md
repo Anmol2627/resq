@@ -99,4 +99,4 @@ vercel.json       # SPA fallback rewrites
 
 ## License
 
-Private project unless otherwise specified by the repository owners.
+
